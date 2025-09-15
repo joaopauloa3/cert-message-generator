@@ -1,0 +1,14 @@
+{
+    "manifest_version": 3,
+    "name": "Gerador de mensagens de vencimento.",
+    "version": "1.0",
+    "description": "Lê uma tabela de clientes e gera mensagens de vencimento para copiar e colar.",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "clipboardWrite"
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    }
+}
