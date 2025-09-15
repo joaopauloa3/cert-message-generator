@@ -1,7 +1,59 @@
-function processAndShowResult(clients) {
+async function getContactedClients() {
+  const result = await chrome.storage.local.get(['contactedClients']);
+  const contacted = result.contactedClients || {};
+  const umaSemanaAtras = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const recentContacts = {};
+  for (const id in contacted) {
+    if (contacted[id] > umaSemanaAtras) {
+      recentContacts[id] = contacted[id];
+    }
+  }
+  await chrome.storage.local.set({ contactedClients: recentContacts });
+  return recentContacts;
+}
+async function saveContactedClient(clientId) {
+  const result = await chrome.storage.local.get(['contactedClients']);
+  const contacted = result.contactedClients || {};
+  contacted[clientId] = Date.now(); // Salva o ID com o timestamp atual
+  await chrome.storage.local.set({ contactedClients: contacted });
+}
+
+
+async function handleClick(e) {
+    clickedButton = e.target;
+
+    const textToCopy = clickedButton.dataset.text;
+    const tel = clickedButton.dataset.tel;
+    const clientId = clickedButton.dataset.clientId; 
+
+    if (!textToCopy || !tel || !clientId) {
+        console.error('Dados não encontrados no botão.');
+        return;
+    }
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        const linkWhatsapp= `whatsapp://send?phone=${tel}`;
+        window.open(linkWhatsapp, '_blank');
+    });
+}
+async function handleClickSave(e) {
+    clickedButton = e.target;
+    const clientId = clickedButton.dataset.clientId; 
+
+    if (!clientId) {
+        console.error('Dados não encontrados no botão.');
+        return;
+    }
+    await saveContactedClient(clientId);
+    clickedButton.parentElement.style.display = 'none';
+}
+
+
+
+function processAndShowResult(clients, contactedIds) {
     console.log("Função processarEExibirResultados foi chamada com:", clients);
     const containerClients = document.getElementById("container-clients");
-
+    const clientsToShow = clients.filter(client => !contactedIds[client.id]);
+    containerClients.innerHTML = "";
 const templateCNPJ = `
 Bom dia/ Boa tarde!
 Prezado(a) {EMPRESA}
@@ -21,16 +73,16 @@ Estamos a disposição para ajudá-lo(a) com um processo de atualização ágil 
 Atenciosamente, 
 DigitalSafe `
 
-    if (clients.length === 0) {
+    if (clientsToShow.length === 0) {
         console.log("Nenhum cliente para exibir. Inserindo mensagem de aviso.")
         containerClients.innerHTML="<p>Nenhum cliente encontrado na tabela.</p>";
         return
     }
 
-    clients.forEach(client => {
-        finalText1 = "";
-        finalText2 = "";
-        finalText3 = "";
+    clientsToShow.forEach(client => {
+        let finalText1 = "";
+        let finalText2 = "";
+        let finalText3 = "";
 
         if (client.type.toUpperCase().includes("CNPJ")) {
             finalText1 = templateCNPJ.replace("{EMPRESA}", client.name);
@@ -44,26 +96,38 @@ DigitalSafe `
 
         const itemDiv = document.createElement('div');
         const textP = document.createElement('p');
-        const btnCopy = document.createElement('button');
-        btnCopy.innerText = "Copiar texto"
-        btnCopy.onclick = () => {
-            navigator.clipboard.writeText(finalText3)
-                .then(() => {
-                    btnCopy.innerText = "Copiado";
-                    setTimeout(() => {
-                        btnCopy.innerText = "Copiat texto"
-                    }, 2000)
-                })
-        }
-    
+        const btnSave = document.createElement('button');
+        const btnWhatsapp = document.createElement('button');
+        
+        btnWhatsapp.dataset.text = finalText3;
+        btnWhatsapp.dataset.tel = client.tel;
+        btnWhatsapp.dataset.clientId = client.id;
+        btnSave.dataset.clientId = client.id;
+
+        // 5. Atribuímos a nossa função de clique única para este botão.
+        btnWhatsapp.onclick = handleClick;
+        btnSave.onclick = handleClickSave;
+        btnWhatsapp.innerText = "Enviar por Zap"
+        btnSave.innerText = "Concluído"
+         
         itemDiv.appendChild(textP);
-        itemDiv.appendChild(btnCopy)
+        itemDiv.appendChild(btnSave)
         containerClients.appendChild(itemDiv)
+        itemDiv.appendChild(btnWhatsapp); 
         textP.innerText = finalText3;
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    const container = document.getElementById('container-clients');
+    container.innerHTML = '<p>Verificando contatos anteriores...</p>';
+
+  const contactedIds = await getContactedClients();
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.data) {
+      processAndShowResult(message.data, contactedIds);
+    }
+  });
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length > 0) {
             
@@ -74,15 +138,4 @@ document.addEventListener('DOMContentLoaded', () => {
               });
         }
     });
-});
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log("MENSAGEM RECEBIDA DO CONTENT.JS:", message);
-    if (message.error) {
-        alert(message.error);
-        return;
-    }
-    if (message.data) {
-        processAndShowResult(message.data);
-    }
 });
