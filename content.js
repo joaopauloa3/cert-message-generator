@@ -34,7 +34,7 @@ function readDataTable() {
             const apenasNumeros = digitosEncontrados.join('');
             
             if (apenasNumeros.length >= 10) {
-              telefoneFinal = '55' + apenasNumeros;
+              telefoneFinal = '+55' + apenasNumeros;
             }
             break; 
           }
