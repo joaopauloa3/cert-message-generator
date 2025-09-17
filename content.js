@@ -1,7 +1,6 @@
-console.log("Content script INJETADO e pronto para rodar.");
+
 function readDataTable() {
   const table = document.querySelector('#tabelaResultados');
-  console.log("Tentando encontrar a tabela #tabelaResultados. Resultado:", table)
 
   if (!table) {
       chrome.runtime.sendMessage({ error: 'Tabela com id="tabelaResultados" não foi encontrada na página.' });
@@ -9,7 +8,6 @@ function readDataTable() {
 }
 
 const rows = table.querySelectorAll('tbody tr');
-console.log(`Encontradas ${rows.length} linhas (<tr>) na tabela.`);
 const clients = [];
 
   rows.forEach(row => {
@@ -40,16 +38,15 @@ const clients = [];
           }
         }
       }
+    let nameClientClean;
 
     nameClientRaw.toUpperCase();
-    if (nameClientRaw.includes("INDICAÇÃO")) {
-      nameClientRaw.split("INDICAÇÃO")[0].trim();
+    if (nameClientRaw.includes("Indicação:")) {
+      nameClientClean = nameClientRaw.split("Indicação:")[0].trim();
+    }else {
+      nameClientClean = nameClientRaw;
     }
-
-
-
-
-    const nameClientClean = nameClientRaw;
+    
 
     const clienteId = `${nameClientRaw}#${typeCertifie}`;
 
@@ -67,8 +64,6 @@ const clients = [];
     // Enviamos a lista de clientes únicos para o popup
     chrome.runtime.sendMessage({ data: clientesUnicos });
   });
-  
-  console.log("Dados extraídos da tabela"); 
 }
 
 readDataTable();
