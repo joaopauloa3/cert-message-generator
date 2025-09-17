@@ -1,16 +1,16 @@
 console.log("Content script INJETADO e pronto para rodar.");
 function readDataTable() {
-    const table = document.querySelector('#tabelaResultados');
-    console.log("Tentando encontrar a tabela #tabelaResultados. Resultado:", table)
+  const table = document.querySelector('#tabelaResultados');
+  console.log("Tentando encontrar a tabela #tabelaResultados. Resultado:", table)
 
-    if (!table) {
-        chrome.runtime.sendMessage({ error: 'Tabela com id="tabelaResultados" não foi encontrada na página.' });
-        return;
-  }
+  if (!table) {
+      chrome.runtime.sendMessage({ error: 'Tabela com id="tabelaResultados" não foi encontrada na página.' });
+      return;
+}
 
-  const rows = table.querySelectorAll('tbody tr');
-  console.log(`Encontradas ${rows.length} linhas (<tr>) na tabela.`);
-  const clients = [];
+const rows = table.querySelectorAll('tbody tr');
+console.log(`Encontradas ${rows.length} linhas (<tr>) na tabela.`);
+const clients = [];
 
   rows.forEach(row => {
     const columns = row.querySelectorAll("td");
@@ -41,27 +41,34 @@ function readDataTable() {
         }
       }
 
+    nameClientRaw.toUpperCase();
+    if (nameClientRaw.includes("INDICAÇÃO")) {
+      nameClientRaw.split("INDICAÇÃO")[0].trim();
+    }
 
-      const nameClientClean = nameClientRaw;
 
-      const clienteId = `${nameClientRaw}#${typeCertifie}`;
 
-      clients.push({
-        id: clienteId,
-        name: nameClientClean,
-        type: typeCertifie,
-        dateEnd: dateEnd,
-        tel: telefoneFinal,
 
-      })
+    const nameClientClean = nameClientRaw;
+
+    const clienteId = `${nameClientRaw}#${typeCertifie}`;
+
+    clients.push({
+      id: clienteId,
+      name: nameClientClean,
+      type: typeCertifie,
+      dateEnd: dateEnd,
+      tel: telefoneFinal,
+
+    })
     }
     const clientesUnicos = [...new Map(clients.map(client => [client.id, client])).values()];
 
-  // Enviamos a lista de clientes únicos para o popup
-  chrome.runtime.sendMessage({ data: clientesUnicos });
+    // Enviamos a lista de clientes únicos para o popup
+    chrome.runtime.sendMessage({ data: clientesUnicos });
   });
   
-    console.log("Dados extraídos da tabela"); 
+  console.log("Dados extraídos da tabela"); 
 }
 
 readDataTable();

@@ -57,7 +57,7 @@ function processAndShowResult(clients, contactedIds) {
 const templateCNPJ = `
 Bom dia/ Boa tarde!
 Prezado(a) {EMPRESA}
-O certificado digital {TIPO-CERTIFICADO} da sua empresa vence dia {DATA-VENCIMENTO}
+O certificado digital {TIPO-CERTIFICADO} da sua empresa {VERB} dia {DATA-VENCIMENTO}
 Para evitar transtornos eventuais e garantir a continuidade de suas operações sem interrupções, recomendamos que a renovação seja feita o quanto antes. 
 Estamos a disposição para ajudá-lo(a) com um processo de atualização ágil e eficiente.  
 Entre em contato e garanta a continuidade de seus serviços sem preocupações. 
@@ -67,7 +67,7 @@ DigitalSafe.`
 const templateCPF = `
 Bom dia/ Boa tarde! 
 Prezado (a), {NOME}
-O seu certificado digital {TIPO-CERTIFICADO} vence dia {DATA-VENCIMENTO}  
+O seu certificado digital {TIPO-CERTIFICADO} {VERB} dia {DATA-VENCIMENTO}  
 Para evitar transtornos eventuais e garantir a continuidade de suas operações sem interrupções, recomendamos que a renovação seja feita o quanto antes. 
 Estamos a disposição para ajudá-lo(a) com um processo de atualização ágil e eficiente. Entre em contato e garanta a continuidade de seus serviços sem preocupações. 
 Atenciosamente, 
@@ -80,16 +80,37 @@ DigitalSafe `
     }
 
     clientsToShow.forEach(client => {
+        let finalText0 = "";
         let finalText1 = "";
         let finalText2 = "";
         let finalText3 = "";
 
+        let dateEnd = client.dateEnd;
+        
+        let [day, month, year] = dateEnd.split("/");
+
+        dateEndFormated = new Date(year, month - 1, day);
+
+        let today = new Date;
+        today.setHours(0, 0, 0, 0)
+
+        let verb = "";
+
+        if (dateEndFormated >= today) {
+          verb = "vence";
+        }else {
+          verb = "venceu";
+        }
+
+
         if (client.type.toUpperCase().includes("CNPJ")) {
-            finalText1 = templateCNPJ.replace("{EMPRESA}", client.name);
+            finalText0 = templateCNPJ.replace("{VERB}", verb);
+            finalText1 = finalText0.replace("{EMPRESA}", client.name);
             finalText2 = finalText1.replace("{TIPO-CERTIFICADO}", client.type);
             finalText3 = finalText2.replace("{DATA-VENCIMENTO}", client.dateEnd);
         }else {
-            finalText1 = templateCPF.replace("{NOME}", client.name);
+            finalText0 = templateCPF.replace("{VERB}", verb);
+            finalText1 = finalText0.replace("{NOME}", client.name);
             finalText2 = finalText1.replace("{TIPO-CERTIFICADO}", client.type);
             finalText3 = finalText2.replace("{DATA-VENCIMENTO}", client.dateEnd);
         }
